@@ -1,0 +1,65 @@
+<!--
+  sensored_arm.xml — Sensor demonstration.
+
+  Same arm as arm_actuators.xml but with a <sensor> block. Sensors attach
+  to a <site> (a massless reference frame) or directly to joints/bodies.
+  experiments/04_sensors_noise.py reads these and then adds noise/bias/
+  latency in software to show the sim-to-real perception gap.
+
+  Sensor types shown:
+    accelerometer / gyro : an IMU. Attached to site "imu".
+    framepos / framequat : world pose of a site (mocap-style ground truth).
+    jointpos / jointvel  : joint encoders.
+    force / torque       : 6-axis F/T at a site.
+  Default MuJoCo sensors are CLEAN (no noise). `noise` attr adds Gaussian
+  noise inside the sim, but doing it in Python (the experiment) lets you
+  randomize bias/latency too — that's domain randomization.
+-->
+<mujoco model="sensored_arm">
+  <option timestep="0.002" integrator="implicitfast" gravity="0 0 -9.81"/>
+
+  <!-- Enlarge the offscreen framebuffer so the headless web_viewer can
+       render at higher resolutions than the 640x480 default. -->
+  <visual>
+    <global offwidth="1280" offheight="720"/>
+  </visual>
+
+  <default>
+    <joint damping="0.1" armature="0.01"/>
+    <geom rgba="0.6 0.6 0.8 1"/>
+  </default>
+
+  <worldbody>
+    <light pos="0 0 3" dir="0 0 -1"/>
+    <geom name="floor" type="plane" size="2 2 0.1" rgba="0.3 0.4 0.5 1"/>
+
+    <body name="link1" pos="0 0 1" euler="0 90 0">
+      <joint name="shoulder" type="hinge" axis="0 1 0" range="-180 180"/>
+      <geom name="g1" type="capsule" fromto="0 0 0 0 0 0.4" size="0.04" mass="1"/>
+      <!-- IMU site: an accelerometer + gyro live here. -->
+      <site name="imu" pos="0 0 0.2" size="0.02" rgba="0 1 0 1"/>
+      <body name="link2" pos="0 0 0.4">
+        <joint name="elbow" type="hinge" axis="0 1 0" range="-180 180"/>
+        <geom name="g2" type="capsule" fromto="0 0 0 0 0 0.4" size="0.03" mass="0.6"/>
+        <site name="tip" pos="0 0 0.4" size="0.02" rgba="1 0 0 1"/>
+      </body>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <motor name="motor_shoulder" joint="shoulder" ctrlrange="-20 20"/>
+    <motor name="motor_elbow"    joint="elbow"    ctrlrange="-20 20"/>
+  </actuator>
+
+  <sensor>
+    <accelerometer name="imu_acc"  site="imu"/>
+    <gyro          name="imu_gyro" site="imu"/>
+    <framepos      name="tip_pos"  objtype="site" objname="tip"/>
+    <framequat     name="tip_quat" objtype="site" objname="tip"/>
+    <jointpos      name="enc_shoulder" joint="shoulder"/>
+    <jointpos      name="enc_elbow"    joint="elbow"/>
+    <jointvel      name="vel_shoulder" joint="shoulder"/>
+    <force         name="ft_force"  site="tip"/>
+    <torque        name="ft_torque" site="tip"/>
+  </sensor>
+</mujoco>

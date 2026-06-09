@@ -1,0 +1,15 @@
+# Core
+mujoco>=3.9.0
+numpy>=1.24
+
+# Rendering / streaming / plots
+pillow>=10.0
+matplotlib>=3.7
+
+# Notes:
+# - The web_viewer streams MJPEG using only the Python stdlib http.server,
+#   so no Flask/websockets are required.
+# - On the headless Linux box, EGL (GPU offscreen) is used automatically;
+#   it ships with the mujoco wheel. On Windows/Mac with a display, the
+#   native GL backend is used and the interactive viewer (run_local_windows)
+#   works out of the box.

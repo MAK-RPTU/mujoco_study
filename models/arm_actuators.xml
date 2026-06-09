@@ -1,0 +1,69 @@
+<!--
+  arm_actuators.xml — Actuation demonstration.
+
+  A 2-link pendulum arm. The SAME mechanical model is driven three
+  different ways; experiments/03_actuators.py swaps which <actuator> is
+  active and shows the difference.
+
+  Actuator types (all act on the same joints):
+    motor    : control signal = applied torque directly (open loop).
+    position : built-in PD position servo. kp is the position gain.
+               You command a target angle; MuJoCo computes the torque.
+    velocity : velocity servo. kv is the velocity gain.
+    general  : the superset — explicit gain/bias/dynamics. The other
+               three are just convenience shorthands for `general`.
+
+  `armature` on each joint models reflected rotor inertia (motor +
+  gearbox inertia seen at the joint). This is a small attribute that
+  closes a real sim-to-real gap — without it, light links accelerate
+  unrealistically fast.
+
+  forcerange / ctrlrange clamp output — real motors saturate.
+-->
+<mujoco model="arm_actuators">
+  <option timestep="0.002" integrator="implicitfast" gravity="0 0 -9.81"/>
+
+  <!-- Enlarge the offscreen framebuffer so the headless web_viewer can
+       render at higher resolutions than the 640x480 default. -->
+  <visual>
+    <global offwidth="1280" offheight="720"/>
+  </visual>
+
+  <default>
+    <joint damping="0.1" armature="0.01"/>
+    <geom rgba="0.6 0.6 0.8 1"/>
+  </default>
+
+  <worldbody>
+    <light pos="0 0 3" dir="0 0 -1"/>
+    <geom name="floor" type="plane" size="2 2 0.1" rgba="0.3 0.4 0.5 1"/>
+
+    <body name="link1" pos="0 0 1" euler="0 90 0">
+      <joint name="shoulder" type="hinge" axis="0 1 0" range="-180 180"/>
+      <geom name="g1" type="capsule" fromto="0 0 0 0 0 0.4" size="0.04" mass="1"/>
+      <body name="link2" pos="0 0 0.4">
+        <joint name="elbow" type="hinge" axis="0 1 0" range="-180 180"/>
+        <geom name="g2" type="capsule" fromto="0 0 0 0 0 0.4" size="0.03" mass="0.6"/>
+        <site name="tip" pos="0 0 0.4" size="0.02" rgba="1 0 0 1"/>
+      </body>
+    </body>
+  </worldbody>
+
+  <!--
+    Three actuators per joint, but only one group is "used" at a time in
+    the experiment (the script zeroes the others' ctrl). Naming convention:
+    <type>_<joint>. MuJoCo applies all of them — the script controls which
+    receive non-zero ctrl.
+  -->
+  <actuator>
+    <!-- direct torque -->
+    <motor    name="motor_shoulder"    joint="shoulder" ctrlrange="-20 20" gear="1"/>
+    <motor    name="motor_elbow"       joint="elbow"    ctrlrange="-20 20" gear="1"/>
+    <!-- PD position servo -->
+    <position name="position_shoulder" joint="shoulder" kp="50" ctrlrange="-3.14 3.14"/>
+    <position name="position_elbow"    joint="elbow"    kp="50" ctrlrange="-3.14 3.14"/>
+    <!-- velocity servo -->
+    <velocity name="velocity_shoulder" joint="shoulder" kv="5"  ctrlrange="-10 10"/>
+    <velocity name="velocity_elbow"    joint="elbow"    kv="5"  ctrlrange="-10 10"/>
+  </actuator>
+</mujoco>
